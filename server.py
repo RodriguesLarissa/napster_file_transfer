@@ -1,30 +1,49 @@
 import socket
 
-# Creation of a socket object
-s = socket.socket()
-print("Socket successfully created")
-
 # Reserve a port
-port = 1099
+PORT = 1099
 
-# Bind the localhost IP address to the port
-s.bind(('', port))
-print(f"Socket binded to {(port)}")
+class RequestClass:
+    """ Class that represents the request to server """
+    def __init__(self, tipo: str):
+        self.tipo = tipo
 
-# Put the socket into listening mode
-s.listen(5)
-print("Socket is listening")
+def start_server():
+    """ Server start to listen to the clients """
+    # Creation of a socket object
+    s = socket.socket()
+    print("Socket successfully created")
 
-while True:
-    # Establish connection with client
-    c, addr = s.accept()
-    print(f"Got connection from {addr}")
+    # Bind the localhost IP address to the port
+    s.bind(('', PORT))
+    print(f"Socket binded to {(PORT)}")
 
-    # Send a thank you message to the client
-    c.send("Thank you for connecting".encode())
+    # Put the socket into listening mode
+    s.listen(5)
+    print("Socket is listening")
 
-    # Close the connection with the client
-    c.close()
+    while True:
+        # Establish connection with client
+        c, addr = s.accept()
+        print(f"Got connection from {addr}")
 
-    # Breaking once connection closed
-    break
+        # Receive request from the client
+        request: RequestClass = s.recv(1024).decode()
+
+        # Check type of request
+        match request.type:
+            case "JOIN":
+                return "JOIN_OK"
+            case "SEARCH":
+                return ""
+            case "UPDATE":
+                return "UPDATE_OK"
+
+        # Send a thank you message to the client
+        c.send("Thank you for connecting".encode())
+
+        # Close the connection with the client
+        c.close()
+
+        # Breaking once connection closed
+        break
