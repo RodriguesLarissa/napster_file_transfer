@@ -2,7 +2,7 @@ import socket, pickle
 from request_class import RequestClass
 
 # Reserve a port
-PORT = 1095
+PORT = 1099
 
 #Relation of file names with the peer address
 relation_file_names_peers = {}
@@ -31,18 +31,17 @@ while True:
     # Check type of request
     match request.type:
         case "JOIN":
-            print(request.__dict__)
-            relation_file_names_peers.update({addr, request.file_names})
+            relation_file_names_peers.update({addr: request.file_names})
             c.send("JOIN_OK".encode())
         case "SEARCH":
-            peers_with_file = [peer for peer in relation_file_names_peers if peer.value == request.file_names[0]]
-            c.send(peers_with_file.encode())
+            peers_with_file = [peer for peer in relation_file_names_peers if request.file_names[0] in relation_file_names_peers[peer]]
+            for peer in peers_with_file:
+                c.send(f"({peer[0]} - {str(peer[1])})".encode())
         case "UPDATE":
-            relation_file_names_peers[addr].extend(request.file_names[0])
+            relation_file_names_peers[addr].extend(request.file_names)
             c.send("UPDATE_OK".encode())
+    
+    print(relation_file_names_peers)
 
     # Close the connection with the client
     c.close()
-
-    # Breaking once connection closed
-    break
