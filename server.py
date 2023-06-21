@@ -1,49 +1,48 @@
-import socket
+import socket, pickle
+from request_class import RequestClass
 
 # Reserve a port
-PORT = 1099
+PORT = 1095
 
-class RequestClass:
-    """ Class that represents the request to server """
-    def __init__(self, tipo: str):
-        self.tipo = tipo
+#Relation of file names with the peer address
+relation_file_names_peers = {}
 
-def start_server():
-    """ Server start to listen to the clients """
-    # Creation of a socket object
-    s = socket.socket()
-    print("Socket successfully created")
+""" Server start to listen to the clients """
+# Creation of a socket object
+s = socket.socket()
+print("Socket successfully created")
 
-    # Bind the localhost IP address to the port
-    s.bind(('', PORT))
-    print(f"Socket binded to {(PORT)}")
+# Bind the localhost IP address to the port
+s.bind(('', PORT))
+print(f"Socket binded to {(PORT)}")
 
-    # Put the socket into listening mode
-    s.listen(5)
-    print("Socket is listening")
+# Put the socket into listening mode
+s.listen(5)
+print("Socket is listening")
 
-    while True:
-        # Establish connection with client
-        c, addr = s.accept()
-        print(f"Got connection from {addr}")
+while True:
+    # Establish connection with client
+    c, addr = s.accept()
+    print(f"Got connection from {addr}")
 
-        # Receive request from the client
-        request: RequestClass = s.recv(1024).decode()
+    # Receive request from the client
+    request: RequestClass = pickle.loads(c.recv(4096))
 
-        # Check type of request
-        match request.type:
-            case "JOIN":
-                return "JOIN_OK"
-            case "SEARCH":
-                return ""
-            case "UPDATE":
-                return "UPDATE_OK"
+    # Check type of request
+    match request.type:
+        case "JOIN":
+            print(request.__dict__)
+            relation_file_names_peers.update({addr, request.file_names})
+            c.send("JOIN_OK".encode())
+        case "SEARCH":
+            peers_with_file = [peer for peer in relation_file_names_peers if peer.value == request.file_names[0]]
+            c.send(peers_with_file.encode())
+        case "UPDATE":
+            relation_file_names_peers[addr].extend(request.file_names[0])
+            c.send("UPDATE_OK".encode())
 
-        # Send a thank you message to the client
-        c.send("Thank you for connecting".encode())
+    # Close the connection with the client
+    c.close()
 
-        # Close the connection with the client
-        c.close()
-
-        # Breaking once connection closed
-        break
+    # Breaking once connection closed
+    break
