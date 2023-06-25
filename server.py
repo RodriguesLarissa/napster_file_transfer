@@ -1,4 +1,5 @@
-import socket, pickle
+import socket
+import json
 
 # Reserve a port
 PORT = 1099
@@ -23,24 +24,24 @@ while True:
     c, addr = s.accept()
 
     # Receive request from the client
-    request = pickle.loads(c.recv(4096))
+    request = json.loads(c.recv(1024).decode())
+    print(request)
 
     # Check type of request
-    match request.type:
+    match request["type"]:
         case "JOIN":
-            relation_file_names_peers.update({request.address: request.filenames})
+            relation_file_names_peers.update({request["address"]: request["filenames"]})
             c.send("JOIN_OK".encode())
-            print(f"Peer {request.address[0]}:{request.address[1]} adicionado com arquivos {request.filenames}")
+            print(f'Peer {request["address"]} adicionado com arquivos {request["filenames"]}')
+
         case "SEARCH":
-            peers_with_file = [peer for peer in relation_file_names_peers if request.file_name in relation_file_names_peers[peer]]
-            for peer in peers_with_file:
-                c.send(f"({peer[0]} - {str(peer[1])})".encode())
-            print(f"Peer {request.address[0]}:{request.address[1]} solicitou arquivo {request.file_name}")
+            peers_with_file = [peer for peer in relation_file_names_peers if request["filename"] in relation_file_names_peers[peer]]
+            c.sendall(json.dumps(peers_with_file).encode())
+            print(f'Peer {request["address"]} solicitou arquivo {request["filename"]}')
+            
         case "UPDATE":
             relation_file_names_peers[addr].extend(request.file_name)
             c.send("UPDATE_OK".encode())
     
-    print(relation_file_names_peers)
-
     # Close the connection with the client
     c.close()
