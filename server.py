@@ -5,48 +5,50 @@ from threading import Thread
 # Reserve a port
 PORT = 1099
 
-#Relation of file names with the peer address
-relation_file_names_peers = {}
-relation_peers_address = {}
+class Server:
+    """ Creation of server class """
 
-# Creation of a socket object
-s = socket.socket()
-print("Socket successfully created")
+    def __init__(self):
+        """ Global variables of server class """
+        self.relation_file_names_peers = {}
+        self.relation_peers_address = {}
+        self.socket_server = socket.socket()
 
-# Bind the localhost IP address to the port
-s.bind(('', PORT))
-print(f"Socket binded to {(PORT)}")
+    def start(self):
+        """ Start of the connection with socket """
+        self.socket_server.bind(('', PORT))
+        self.socket_server.listen(5)
 
-# Put the socket into listening mode
-s.listen(5)
-print("Socket is listening")
+    def thread(self):
+        """ Start connection with thread """
+        while True:
+            connection, addr = self.socket_server.accept()
+            thread = Thread(target=self.process_message, args=(connection, addr))
+            thread.start()    
 
+    def process_message(self, socket_type: socket, address: tuple):
+        """ Process message based on JOIN, SEARCH or UPDATE """
+        while True:
+            # Receive request from the client
+            request = json.loads(socket_type.recv(4096).decode())
 
-def process_message(socket: socket, address: tuple):
-    """ Process Message """
-    while True:
-        # Receive request from the client
-        request = json.loads(c.recv(1024).decode())
+            # Check type of request
+            match request["type"]:
+                case "JOIN":
+                    self.relation_file_names_peers.update({request["address"]: request["filenames"]})
+                    self.relation_peers_address.update({address: request["address"]})
+                    socket_type.send("JOIN_OK".encode())
+                    print(f'Peer {request["address"]} adicionado com arquivos {request["filenames"]}')
 
-        # Check type of request
-        match request["type"]:
-            case "JOIN":
-                relation_file_names_peers.update({request["address"]: request["filenames"]})
-                relation_peers_address.update({address: request["address"]})
-                c.send("JOIN_OK".encode())
-                print(f'Peer {request["address"]} adicionado com arquivos {request["filenames"]}')
+                case "SEARCH":
+                    peers_with_file = [peer for peer in self.relation_file_names_peers if request["filename"] in self.relation_file_names_peers[peer]]
+                    socket_type.sendall(json.dumps(peers_with_file).encode())
+                    print(f'Peer {self.relation_peers_address[address]} solicitou arquivo {request["filename"]}')
+                    
+                case "UPDATE":
+                    self.relation_file_names_peers[self.relation_peers_address[address]].extend(request["filename"])
+                    socket_type.send("UPDATE_OK".encode())
 
-            case "SEARCH":
-                peers_with_file = [peer for peer in relation_file_names_peers if request["filename"] in relation_file_names_peers[peer]]
-                c.sendall(json.dumps(peers_with_file).encode())
-                print(f'Peer {relation_peers_address[address]} solicitou arquivo {request["filename"]}')
-                
-            case "UPDATE":
-                relation_file_names_peers[addr].extend(request.file_name)
-                c.send("UPDATE_OK".encode())
-
-while True:
-    # Establish connection with client
-    c, addr = s.accept()
-    thread = Thread(target=process_message, args=(c, addr))
-    thread.start()
+server = Server()
+server.start()
+server.thread()
