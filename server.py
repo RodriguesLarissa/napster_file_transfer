@@ -19,6 +19,7 @@ class Server:
         self.ip = input("Digite o ip: ")
         self.port = int(input("Digite a porta: "))
         self.socket_connection()
+        self.thread()
         
     def socket_connection(self):
         """ Start of the connection with socket """
@@ -60,4 +61,3 @@ class Server:
 
 server = Server()
 server.start()
-server.thread()
