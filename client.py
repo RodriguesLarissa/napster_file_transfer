@@ -5,6 +5,7 @@ from threading import Thread
 
 # Define port to connect with server
 PORT = 1099
+IP = "127.0.0.1"
 
 class Client:
     """ Creation of client class """
@@ -33,7 +34,7 @@ class Client:
         self.connect_socket_send_file()
 
         # Connect with server
-        self.socket_server.connect(('', PORT))
+        self.socket_server.connect((IP, PORT))
 
         # Send Join request
         message_to_server = {"type": "JOIN", "address": peer_address, "filenames": filenames}
