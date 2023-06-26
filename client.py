@@ -17,6 +17,8 @@ class Client:
         self.folder_path = ""
         self.ip = ""
         self.port = 0
+
+        #Creation of thread connection that listens to other peers that want to download
         self.listen_connections_thread = Thread(target=self.listen_connections)
 
     def join(self):
@@ -27,9 +29,13 @@ class Client:
         self.folder_path = str(input(("Digite o nome da pasta com os arquivos: ")))
         filenames = self.get_filenames()
 
+        # Start connection with socket to send files to other peers with DOWNLOAD request
         self.connect_socket_send_file()
 
+        # Connect with server
         self.socket_server.connect(('', PORT))
+
+        # Send Join request
         message_to_server = {"type": "JOIN", "address": peer_address, "filenames": filenames}
         server_message = self.send_message_to_server(self.socket_server, message_to_server)
 
@@ -39,6 +45,8 @@ class Client:
     def search(self):
         """ Function to search peers with files wanted """
         filename = str(input(("Digite o nome do arquivo que está procurando: ")))
+
+        # Send Search request
         message_to_server = {"type": "SEARCH", "filename": filename}
         peer_addresses = self.send_message_to_server(self.socket_server, message_to_server)
         print(f'peers com arquivo solicitado: {json.loads(peer_addresses)}')
@@ -49,11 +57,16 @@ class Client:
         port = int(input("Digite a porta: "))
         filename = str(input(("Digite o nome do arquivo para download: ")))
 
+        # Create connection with another peer to download a file
         self.socket_download.connect((ip, port))
+
+        # Send download request to peer
         message_to_server = {"type": "DOWNLOAD", "filename": filename}
         self.socket_download.sendall(json.dumps(message_to_server).encode())
         self.write_file(filename)
         print(f'Arquivo {filename} baixado com sucesso na pasta {self.folder_path}')
+
+        # Send update request to server after download
         self.update(filename)
         self.socket_download.close()
 
@@ -72,7 +85,7 @@ class Client:
         self.send_message_to_server(self.socket_server, message_to_server)
 
     def send_message_to_server(self, socket_type: socket, message_to_server: dict):
-        """ Connect """    
+        """ Send message to server using sockets """    
         socket_type.sendall(json.dumps(message_to_server).encode())
         return socket_type.recv(2048).decode()
 

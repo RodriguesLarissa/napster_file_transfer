@@ -15,6 +15,7 @@ class Server:
 
     def start(self):
         """ Start server application """
+        #Server startup
         self.ip = input("Digite o ip: ")
         self.port = int(input("Digite a porta: "))
         self.socket_connection()
@@ -39,17 +40,20 @@ class Server:
 
             # Check type of request
             match request["type"]:
+                #Performs the JOIN request
                 case "JOIN":
                     self.relation_file_names_peers.update({request["address"]: request["filenames"]})
                     self.relation_peers_address.update({address: request["address"]})
                     socket_type.send("JOIN_OK".encode())
                     print(f'Peer {request["address"]} adicionado com arquivos {request["filenames"]}')
 
+                #Performs the SEARCH request
                 case "SEARCH":
                     peers_with_file = [peer for peer in self.relation_file_names_peers if request["filename"] in self.relation_file_names_peers[peer]]
                     socket_type.sendall(json.dumps(peers_with_file).encode())
                     print(f'Peer {self.relation_peers_address[address]} solicitou arquivo {request["filename"]}')
-                    
+                
+                #Performs the UPDATE request
                 case "UPDATE":
                     self.relation_file_names_peers[self.relation_peers_address[address]].append(request["filename"])
                     socket_type.send("UPDATE_OK".encode())
