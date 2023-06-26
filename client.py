@@ -4,7 +4,7 @@ import os
 from threading import Thread
 
 # Define port to connect with server
-PORT = 1099
+PORT = 1098
 
 class Client:
     """ Creation of client class """
@@ -52,20 +52,18 @@ class Client:
         self.socket_download.connect((peer_ip, peer_port))
         message_to_server = {"type": "DOWNLOAD", "filename": filename}
         self.socket_download.sendall(json.dumps(message_to_server).encode())
-        file = self.socket_download.recv(4096)
-        self.write_file(file, filename)
+        self.write_file(filename)
         print(f'Arquivo {filename} baixado com sucesso na pasta {self.folder_path}')
         self.update(filename)
 
-    def write_file(self, file, filename: str):
+    def write_file(self, filename: str):
         """ Write file in folder """
         with open(f'{self.folder_path}/{filename}', 'wb') as file_to_write:
             while True:
-                data = file
-                if not data:
+                file = self.socket_download.recv(2048)
+                if not file:
                     break
-                file_to_write.write(data)
-            file_to_write.close()
+                file_to_write.write(file)
 
     def update(self, filename: str):
         """ Function to update informations of the peer on the server """
@@ -75,7 +73,7 @@ class Client:
     def send_message_to_server(self, socket_type: socket, message_to_server: dict):
         """ Connect """    
         socket_type.sendall(json.dumps(message_to_server).encode())
-        return socket_type.recv(4096).decode()
+        return socket_type.recv(2048).decode()
 
     def get_filenames(self):
         """ Get filenames from folder path """
@@ -88,15 +86,17 @@ class Client:
         """ Listen for connections"""
         while True:
             connection, _ = self.socket_send_file.accept()
-            request = json.loads(connection.recv(4096).decode())
+            request = json.loads(connection.recv(2048).decode())
 
             if request["type"] ==  "DOWNLOAD" and request["filename"] in self.get_filenames():
                 with open(f'{self.folder_path}/{request["filename"]}', "rb") as file_to_send:
-                    bytes_read = file_to_send.read(4096)
-                    if not bytes_read:
-                        break
-                    connection.sendall(bytes_read)
-                    connection.close()
+                    while True:
+                        bytes_read = file_to_send.read(2048)
+                        if not bytes_read:
+                            break
+                        connection.sendall(bytes_read)
+
+            connection.close()
 
     def connect_socket_send_file(self):
         """ Create connection of socket """
