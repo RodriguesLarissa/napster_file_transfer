@@ -2,9 +2,6 @@ import socket
 import json
 from threading import Thread
 
-# Reserve a port
-PORT = 1099
-
 class Server:
     """ Creation of server class """
 
@@ -13,10 +10,18 @@ class Server:
         self.relation_file_names_peers = {}
         self.relation_peers_address = {}
         self.socket_server = socket.socket()
+        self.ip = ""
+        self.port = 0
 
     def start(self):
+        """ Start server application """
+        self.ip = input("Digite o ip: ")
+        self.port = int(input("Digite a porta: "))
+        self.socket_connection()
+        
+    def socket_connection(self):
         """ Start of the connection with socket """
-        self.socket_server.bind(('', PORT))
+        self.socket_server.bind((self.ip, self.port))
         self.socket_server.listen(5)
 
     def thread(self):
@@ -46,7 +51,7 @@ class Server:
                     print(f'Peer {self.relation_peers_address[address]} solicitou arquivo {request["filename"]}')
                     
                 case "UPDATE":
-                    self.relation_file_names_peers[self.relation_peers_address[address]].extend(request["filename"])
+                    self.relation_file_names_peers[self.relation_peers_address[address]].append(request["filename"])
                     socket_type.send("UPDATE_OK".encode())
 
 server = Server()

@@ -4,7 +4,7 @@ import os
 from threading import Thread
 
 # Define port to connect with server
-PORT = 1098
+PORT = 1099
 
 class Client:
     """ Creation of client class """
@@ -15,15 +15,15 @@ class Client:
         self.socket_download = socket.socket()
         self.socket_send_file = socket.socket()
         self.folder_path = ""
-        self.peer_ip = ""
-        self.peer_port = 0
+        self.ip = ""
+        self.port = 0
         self.listen_connections_thread = Thread(target=self.listen_connections)
 
     def join(self):
         """ Function to peer connect to the server """
-        self.peer_ip = input("Digite o ip: ")
-        self.peer_port = int(input("Digite a porta: "))
-        peer_address = f"{self.peer_ip}:{self.peer_port}"
+        self.ip = input("Digite o ip: ")
+        self.port = int(input("Digite a porta: "))
+        peer_address = f"{self.ip}:{self.port}"
         self.folder_path = str(input(("Digite o nome da pasta com os arquivos: ")))
         filenames = self.get_filenames()
 
@@ -45,16 +45,17 @@ class Client:
 
     def download(self):
         """ Function to download files from another peer """
-        peer_ip = input("Digite o ip: ")
-        peer_port = int(input("Digite a porta: "))
+        ip = input("Digite o ip: ")
+        port = int(input("Digite a porta: "))
         filename = str(input(("Digite o nome do arquivo para download: ")))
 
-        self.socket_download.connect((peer_ip, peer_port))
+        self.socket_download.connect((ip, port))
         message_to_server = {"type": "DOWNLOAD", "filename": filename}
         self.socket_download.sendall(json.dumps(message_to_server).encode())
         self.write_file(filename)
         print(f'Arquivo {filename} baixado com sucesso na pasta {self.folder_path}')
         self.update(filename)
+        self.socket_download.close()
 
     def write_file(self, filename: str):
         """ Write file in folder """
@@ -100,7 +101,7 @@ class Client:
 
     def connect_socket_send_file(self):
         """ Create connection of socket """
-        self.socket_send_file.bind((self.peer_ip, self.peer_port))
+        self.socket_send_file.bind((self.ip, self.port))
         self.socket_send_file.listen(5)
         self.listen_connections_thread.start()
 
